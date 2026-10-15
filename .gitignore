@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.streamlit/secrets.toml
+*.rds
+*.RData
+*.xlsx
+*.docx
+*.pdf
+*.log
