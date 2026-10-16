@@ -31,7 +31,7 @@ python -m venv .venv
 
 浏览器打开终端显示的地址，通常为 `http://localhost:8501`。
 
-本机如果存在 `work/python312/python.exe`，它是本次在工作目录准备的便携运行时，也可直接用来启动；它不随项目 ZIP 分发。
+本机的 `work/python312/python.exe` 是本次在工作目录准备的便携解释器，不随项目 ZIP 分发。本地依赖下载受到连接中断影响，尚未装齐；使用前仍需为所选解释器安装 `requirements.txt` 中的依赖。云端已完成完整测试，详见 [VERIFICATION.md](VERIFICATION.md)。
 
 ## 3. 发布为 Streamlit 网站
 
