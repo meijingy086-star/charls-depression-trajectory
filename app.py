@@ -138,7 +138,7 @@ with predict_tab:
             for s in specs:
                 if s["name"] not in ordered:
                     raw[s["name"]] = field(s)
-            submitted = st.form_submit_button("预测轨迹类别", type="primary", use_container_width=True, disabled=model is None)
+            submitted = st.form_submit_button("预测轨迹类别", type="primary", width="stretch", disabled=model is None)
         if submitted and model:
             st.session_state["result"] = None
             try:
@@ -168,7 +168,7 @@ with predict_tab:
                               font=dict(size=14,color="#172D37"),
                               xaxis=dict(range=[0,1.15],tickformat=".0%",title="投票比例",gridcolor="#E4ECE7"),
                               yaxis=dict(autorange="reversed"))
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
             if result["tie"]:
                 st.info("存在最高分并列，按 Class 列顺序选择第一类，与研究代码的规则一致。")
             for warning in result["warnings"]:
@@ -201,7 +201,7 @@ with research_tab:
             xaxis=dict(title="随访年份",tickmode="array",tickvals=[2011,2013,2015,2018,2020]),
             yaxis=dict(title="CES-D-10 平均得分"),legend=dict(orientation="h",y=1.12),
             paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="#FFF",margin=dict(l=15,r=15,t=70,b=20))
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig,width="stretch")
         st.caption("本图为按开发集轨迹归属分组的实际均值，不是对本次输入个体未来各年的评分预测。")
     metrics = model.data.get("metrics", []) if model else []
     if not metrics and (ROOT / "validation_metrics.csv").exists():
@@ -219,7 +219,7 @@ with research_tab:
         frame = frame[[c for c in ["Model","Accuracy","Sensitivity","Precision","F1","AUC"] if c in frame]]
         frame = frame.rename(columns={"Model":"模型","Accuracy":"准确率","Sensitivity":"宏平均召回率",
                                       "Precision":"宏平均精确率","F1":"宏平均 F1","AUC":"多分类 AUC"})
-        st.dataframe(frame.round(3),hide_index=True,use_container_width=True)
+        st.dataframe(frame.round(3),hide_index=True,width="stretch")
     if model:
         dev_counts = model.data.get("development_class_counts",{})
         val_counts = model.data.get("validation_class_counts",{})

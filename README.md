@@ -35,11 +35,11 @@ python -m venv .venv
 
 ## 3. 发布为 Streamlit 网站
 
-1. 登录自己的 GitHub，创建例如 `charls-depression-trajectory` 的仓库。
-2. 上传本文件夹内的项目文件，包括隐藏目录 `.streamlit` 和导出后的 `artifacts/model.json.gz`。不要再嵌套多一层项目目录。
+1. 项目已上传至 [meijingy086-star/charls-depression-trajectory](https://github.com/meijingy086-star/charls-depression-trajectory)，包含真实模型文件，无需再手动上传。
+2. 若迁移到其他仓库，上传本文件夹内的项目文件，包括隐藏目录 `.streamlit` 和 `artifacts/model.json.gz`。不要再嵌套多一层项目目录。
 3. 不上传原始 Excel、受试者逐人数据、完整 `.RData`、论文或 Word 文档；这些都不是网站运行的依赖。
-4. 登录 [Streamlit Community Cloud](https://share.streamlit.io/)，选择 Create app，连接上述仓库。
-5. 入口文件选择 `app.py`，Python 版本选择 `3.12`，点击 Deploy。
+4. 登录 [Streamlit Community Cloud](https://share.streamlit.io/)，选择 Create app，选择部署 GitHub 仓库。
+5. Repository 填 `meijingy086-star/charls-depression-trajectory`，Branch 填 `main`，Main file path 填 `app.py`；Python 版本选择 `3.12`，点击 Deploy。
 6. 部署成功后，以平台实际返回的 `https://….streamlit.app/` 地址为准；本项目不预设或伪造公开网址。
 
 官方流程：[部署应用](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app)，[依赖管理](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies)。
@@ -73,10 +73,13 @@ python -m venv .venv
 ## 验证
 
 ```powershell
+python -m pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 python verify_model.py
 ```
 
 测试使用的少量人工决策树仅存在于 `tests/`，不会被网页当作真实模型加载。`verify_model.py` 则必须使用 R 导出的真实模型。
+
+仓库中的 GitHub Actions 会验证真实模型对照结果，并测试页面首次载入、缺失输入拦截、填入参考示例、预测和清空表单等行为。
 
 参考论文：A machine-learning-derived online prediction model for depression risk in COPD patients: A retrospective cohort study from CHARLS，DOI：[10.1016/j.jad.2025.02.063](https://doi.org/10.1016/j.jad.2025.02.063)。参考网站和其 GitHub 链接在本次访问时不可用，本项目未复制其源代码。
