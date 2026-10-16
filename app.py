@@ -1,376 +1,215 @@
-"""CHARLS four-class trajectory research application."""
-
-import datetime
-import html
-import json
+import streamlit as st
+import numpy as np
+import pandas as pd
+import shap
+import matplotlib.pyplot as plt
 from pathlib import Path
 
-import streamlit as st
-
-from predictor import ModelError, TrajectoryModel
-
-
-ROOT = Path(__file__).absolute().parent
-MODEL_PATH = ROOT / "artifacts" / "model.json.gz"
-
-with (ROOT / "study_info.json").open(encoding="utf-8") as handle:
-    INFO = json.load(handle)
+from predictor import TrajectoryModel
 
 
 st.set_page_config(
-    page_title=INFO["title"],
-    page_icon="🌿",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
-st.markdown(
-    """
-<style>
-.block-container {
-    max-width:1240px;
-    padding-top:2.2rem;
-    padding-bottom:3rem;
-}
-h1,h2,h3 {
-    color:#172D37;
-    letter-spacing:-.03em;
-}
-div[data-testid="stForm"] {
-    background:white;
-    border:1px solid #E1EAE5;
-    border-radius:18px;
-    padding:25px;
-}
-.eyebrow {
-    color:#12796D;
-    font-size:.76rem;
-    font-weight:750;
-    letter-spacing:.15em;
-    margin-bottom:12px;
-}
-.hero {
-    border-left:4px solid #12796D;
-    padding:3px 0 3px 20px;
-    margin-bottom:26px;
-}
-.hero h1 {
-    font-size:2.1rem;
-    margin-bottom:5px;
-}
-.hero p {
-    color:#64747B;
-    font-size:1rem;
-    margin-bottom:5px;
-}
-.section-label {
-    font-size:.8rem;
-    color:#12796D;
-    font-weight:750;
-    letter-spacing:.1em;
-    margin:14px 0 6px;
-}
-.result-box {
-    background:#EAF4EF;
-    border:1px solid #C5DED1;
-    border-radius:16px;
-    padding:22px 24px;
-    margin-bottom:20px;
-}
-.result-box h2 {
-    margin:6px 0;
-    font-size:1.9rem;
-}
-.result-box p {
-    color:#465E57;
-    margin:0;
-    font-size:.95rem;
-}
-.empty-box {
-    background:white;
-    border:1px dashed #C7D5CF;
-    border-radius:18px;
-    padding:35px 25px;
-    min-height:160px;
-    margin-top:2px;
-}
-.empty-box h3 {
-    font-size:1.25rem;
-}
-.empty-box p {
-    color:#6A7C76;
-    line-height:1.8;
-}
-button[kind="primary"] {
-    border-radius:9px;
-    min-height:44px;
-}
-@media(max-width:700px) {
-    .hero h1 {
-        font-size:1.65rem;
-    }
-    .block-container {
-        padding-top:1.2rem;
-    }
-    .hero {
-        padding-left:12px;
-    }
-}
-</style>
-""",
-    unsafe_allow_html=True,
+    page_title="Depressive Symptom Trajectory Predictor",
+    layout="centered",
 )
 
 
-@st.cache_resource(show_spinner="正在载入模型…")
-def load_model(path, modified_at):
+# Load the original random forest model
+@st.cache_resource
+def load_model():
+    path = Path(__file__).absolute().parent / "artifacts" / "model.json.gz"
     return TrajectoryModel.load(path)
 
 
-model = None
-load_error = None
+model = load_model()
 
-if MODEL_PATH.exists():
-    try:
-        model = load_model(
-            str(MODEL_PATH),
-            MODEL_PATH.stat().st_mtime_ns,
-        )
-    except (ModelError, OSError, ValueError, KeyError, TypeError) as exc:
-        load_error = str(exc)
+variable_names = [spec["name"] for spec in model.inputs]
 
 
-specs = model.inputs if model else INFO["preview_inputs"]
-signature = model.digest if model else "preview"
-
-if st.session_state.get("model_signature") != signature:
-    for key in list(st.session_state):
-        if key.startswith("profile_"):
-            del st.session_state[key]
-
-    st.session_state["result"] = None
-    st.session_state["model_signature"] = signature
-
-
-def class_label(name):
-    return INFO["classes"].get(name, {}).get("label", name)
-
-
-def example_profile():
-    for spec in specs:
-        st.session_state["profile_" + spec["name"]] = spec.get("default")
-
-    st.session_state["result"] = None
+# English variable labels
+english_labels = {
+    "gender": "Gender",
+    "marry": "Marital status",
+    "edu": "Education level",
+    "retire": "Retirement status",
+    "systo": "Systolic blood pressure",
+    "bmi": "BMI",
+    "drinkl": "Alcohol consumption",
+    "social": "Social participation",
+    "chronic": "Chronic disease",
+    "arther": "Arthritis",
+    "disability": "Disability",
+    "hear": "Hearing",
+    "eyesight_close": "Near vision",
+    "sleep": "Sleep duration",
+    "satlife": "Life satisfaction",
+}
 
 
-def clear_profile():
-    for spec in specs:
-        st.session_state["profile_" + spec["name"]] = None
+# Preserve the original category codes
+category_labels = {
+    "gender": {
+        "1": "Female",
+        "2": "Male",
+    },
+    "marry": {
+        "1": "Other",
+        "2": "Married",
+    },
+    "edu": {
+        "1": "Less than primary school",
+        "2": "Primary school",
+        "3": "Middle school",
+        "4": "High school or above",
+    },
+    "retire": {
+        "1": "Not retired",
+        "2": "Retired",
+    },
+    "hear": {
+        "1": "Good",
+        "2": "Fair",
+        "3": "Poor",
+    },
+    "eyesight_close": {
+        "1": "Good",
+        "2": "Fair",
+        "3": "Poor",
+    },
+    "satlife": {
+        "1": "Poor",
+        "2": "Fair",
+        "3": "Good",
+    },
+}
 
-    st.session_state["result"] = None
+binary_labels = {
+    "1": "No",
+    "2": "Yes",
+}
+
+units = {
+    "systo": "mmHg",
+    "bmi": "kg/m²",
+    "sleep": "hours/night",
+}
+
+feature_names = [
+    english_labels.get(name, name)
+    for name in variable_names
+]
 
 
-def field(spec):
-    key = "profile_" + spec["name"]
+st.title("Depressive Symptom Trajectory Predictor")
+
+
+# Generate input fields
+inputs = {}
+
+for spec in model.inputs:
+    name = spec["name"]
+    label = english_labels.get(name, name)
 
     if spec["type"] == "category":
-        labels = {
-            option["value"]: option["label"]
-            for option in spec["options"]
-        }
+        options = [item["value"] for item in spec["options"]]
+        labels = category_labels.get(name, binary_labels)
 
-        return st.selectbox(
-            spec["label"],
-            options=list(labels),
-            index=None,
-            format_func=lambda code: labels[code],
-            placeholder="请选择",
-            key=key,
-        )
-
-    unit = spec.get("unit", "")
-    label = spec["label"] + ("（" + unit + "）" if unit else "")
-
-    return st.number_input(
-        label,
-        value=None,
-        step=0.1,
-        format="%.2f",
-        placeholder="请输入实测值",
-        key=key,
-    )
-
-
-st.markdown(
-    '<div class="eyebrow">CHARLS · TRAJECTORY RESEARCH</div>',
-    unsafe_allow_html=True,
-)
-
-subtitle = INFO.get("subtitle", "")
-subtitle_html = (
-    "<p>" + html.escape(subtitle) + "</p>"
-    if subtitle
-    else ""
-)
-
-st.markdown(
-    '<div class="hero"><h1>'
-    + html.escape(INFO["title"])
-    + "</h1>"
-    + subtitle_html
-    + "</div>",
-    unsafe_allow_html=True,
-)
-
-if model is None:
-    st.error("模型尚未成功载入，暂时无法预测。")
-
-    if load_error:
-        with st.expander("查看加载错误"):
-            st.code(load_error, language=None)
-
-
-left, right = st.columns([1.15, 1], gap="large")
-
-with left:
-    st.subheader("输入基线信息")
-
-    b1, b2 = st.columns(2)
-
-    b1.button(
-        "填入参考示例",
-        on_click=example_profile,
-        disabled=model is None,
-    )
-
-    b2.button(
-        "清空输入",
-        on_click=clear_profile,
-    )
-
-    with st.form("prediction_form"):
-        groups = [
-            (
-                "基本情况",
-                ["age", "gender", "marry", "edu", "retire"],
-            ),
-            (
-                "健康状况",
-                [
-                    "chronic",
-                    "hibpe",
-                    "diabe",
-                    "arther",
-                    "disability",
-                    "hear",
-                    "eyesight_close",
-                    "eyesight_distance",
-                ],
-            ),
-            (
-                "生活方式与感受",
-                ["drinkl", "social", "sleep", "satlife"],
-            ),
-            (
-                "体格测量",
-                ["systo", "diasto", "bmi"],
-            ),
-        ]
-
-        lookup = {spec["name"]: spec for spec in specs}
-        ordered = []
-        raw = {}
-
-        for title, names in groups:
-            current = [
-                lookup[name]
-                for name in names
-                if name in lookup
-            ]
-
-            if not current:
-                continue
-
-            st.markdown(
-                '<div class="section-label">'
-                + html.escape(title)
-                + "</div>",
-                unsafe_allow_html=True,
-            )
-
-            cols = st.columns(2)
-
-            for i, spec in enumerate(current):
-                with cols[i % 2]:
-                    raw[spec["name"]] = field(spec)
-
-                ordered.append(spec["name"])
-
-        for spec in specs:
-            if spec["name"] not in ordered:
-                raw[spec["name"]] = field(spec)
-
-        submitted = st.form_submit_button(
-            "预测轨迹类别",
-            type="primary",
-            width="stretch",
-            disabled=model is None,
-        )
-
-    if submitted and model:
-        st.session_state["result"] = None
-
-        try:
-            result = model.predict(raw)
-            result["inputs"] = dict(raw)
-            result["model_sha256"] = model.digest
-            result["created_at"] = datetime.datetime.now(
-                datetime.timezone.utc
-            ).isoformat()
-
-            st.session_state["result"] = result
-
-        except ModelError as exc:
-            st.error(str(exc))
-
-
-with right:
-    st.subheader("预测结果")
-
-    result = st.session_state.get("result")
-
-    if result:
-        label = class_label(result["class"])
-
-        st.markdown(
-            '<div class="result-box">'
-            "<p>模型最可能分配的轨迹类别</p>"
-            "<h2>"
-            + html.escape(label)
-            + "</h2></div>",
-            unsafe_allow_html=True,
-        )
-
-        for warning in result.get("warnings", []):
-            st.warning(warning)
-
-        st.download_button(
-            "下载本次预测结果",
-            data=json.dumps(
-                result,
-                ensure_ascii=False,
-                indent=2,
-            ).encode("utf-8"),
-            file_name="trajectory_prediction.json",
-            mime="application/json",
+        inputs[name] = st.selectbox(
+            label,
+            options=options,
+            index=options.index(str(spec["default"])),
+            format_func=lambda value, mapping=labels: mapping[value],
         )
 
     else:
-        st.markdown(
-            '<div class="empty-box">'
-            "<h3>等待预测</h3>"
-            "<p>填写左侧信息后，点击“预测轨迹类别”查看结果。</p>"
-            "</div>",
-            unsafe_allow_html=True,
+        unit = units.get(name, "")
+        display_label = f"{label} ({unit})" if unit else label
+
+        inputs[name] = st.number_input(
+            display_label,
+            value=float(spec["default"]),
+            step=0.1,
+            format="%.2f",
         )
-        
+
+
+# Convert SHAP inputs back to the original model inputs
+def predict_proba(values):
+    values = np.asarray(values, dtype=float)
+    probabilities = []
+
+    for row in values:
+        raw = {}
+
+        for i, spec in enumerate(model.inputs):
+            if spec["type"] == "category":
+                raw[spec["name"]] = str(int(row[i]))
+            else:
+                raw[spec["name"]] = float(row[i])
+
+        probabilities.append(model.predict(raw)["probabilities"])
+
+    return np.asarray(probabilities)
+
+
+if st.button("Predict"):
+    prediction = model.predict(inputs)
+
+    st.write("**Predicted class:**", prediction["class"])
+
+    features = pd.DataFrame(
+        [[float(inputs[name]) for name in variable_names]],
+        columns=feature_names,
+    )
+
+    # Reference profile: development-set medians and modes
+    background = pd.DataFrame(
+        [[float(spec["default"]) for spec in model.inputs]],
+        columns=feature_names,
+    )
+
+    with st.spinner("Calculating SHAP values..."):
+        explainer = shap.PermutationExplainer(
+            predict_proba,
+            background,
+            feature_names=feature_names,
+            seed=2026,
+        )
+
+        explanation = explainer(
+            features,
+            max_evals=32 * (2 * len(feature_names) + 1),
+        )
+
+    # Explain the predicted class
+    class_index = model.classes.index(prediction["class"])
+    shap_values = explanation.values[0, :, class_index]
+    base_value = float(explanation.base_values[0, class_index])
+
+    st.subheader("Individual SHAP Analysis")
+
+    if np.allclose(shap_values, 0):
+        st.write(
+            "All SHAP values are zero relative to the reference profile."
+        )
+
+    else:
+        fig = shap.force_plot(
+            base_value,
+            shap_values,
+            features.iloc[0],
+            feature_names=feature_names,
+            out_names=prediction["class"],
+            matplotlib=True,
+            show=False,
+            figsize=(16, 4),
+        )
+
+        st.pyplot(fig)
+        plt.close(fig)
+
+    st.caption(
+        "Reference: development-set medians and modes. "
+        "Positive SHAP values increase the predicted-class score; "
+        "negative values decrease it."
+    )
