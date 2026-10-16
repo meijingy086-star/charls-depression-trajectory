@@ -1,6 +1,6 @@
 {
   "title": "老年人抑郁症状轨迹预测",
-  "subtitle": "基于 CHARLS 基线特征的四类轨迹预测 · 研究原型",
+  "subtitle": "",
   "classes": {
     "Class1": {"label": "Class 1", "color": "#2677B8"},
     "Class2": {"label": "Class 2", "color": "#DB9026"},
