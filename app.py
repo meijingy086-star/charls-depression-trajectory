@@ -23,6 +23,14 @@ def load_model():
 
 model = load_model()
 
+# English names for the four trajectory groups
+group_names = {
+    "Class1": "G1: Persistent Low Group",
+    "Class2": "G2: Increasing Group",
+    "Class3": "G3: U-Shaped Group",
+    "Class4": "G4: Persistent High Group",
+}
+
 variable_names = [spec["name"] for spec in model.inputs]
 
 
@@ -155,7 +163,8 @@ def predict_proba(values):
 if st.button("Predict"):
     prediction = model.predict(inputs)
 
-    st.write("**Predicted class:**", prediction["class"])
+    predicted_group = group_names[prediction["class"]]
+    st.write("**Predicted trajectory group:**", predicted_group)
 
     features = pd.DataFrame(
         [[float(inputs[name]) for name in variable_names]],
@@ -199,7 +208,7 @@ if st.button("Predict"):
             shap_values,
             features.iloc[0],
             feature_names=feature_names,
-            out_names=prediction["class"],
+            out_names=predicted_group,
             matplotlib=True,
             show=False,
             figsize=(16, 4),
