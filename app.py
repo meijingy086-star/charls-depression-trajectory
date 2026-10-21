@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import shap
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap, to_hex, to_rgba
 from pathlib import Path
 
 from predictor import TrajectoryModel
@@ -160,6 +161,40 @@ def predict_proba(values):
     return np.asarray(probabilities)
 
 
+def style_shap_force_plot(fig):
+    """Match the R force plot: positive yellow, negative rose-purple."""
+    palette = {
+        "#ff0d57": "#F6D746",
+        "#ff0051": "#F6D746",
+        "#1e88e5": "#A32B63",
+        "#ffc3d5": "#FDF5D1",
+        "#d1e6fa": "#E8CAD8",
+    }
+
+    def recolor(color):
+        rgba = to_rgba(color)
+        replacement = palette.get(to_hex(rgba))
+        return to_rgba(replacement, alpha=rgba[3]) if replacement else rgba
+
+    # SHAP's Matplotlib renderer uses fixed colors; style only this figure.
+    for ax in fig.axes:
+        for patch in ax.patches:
+            patch.set_facecolor(recolor(patch.get_facecolor()))
+            patch.set_edgecolor(recolor(patch.get_edgecolor()))
+        for line in ax.lines:
+            line.set_color(recolor(line.get_color()))
+        for text in ax.texts:
+            text.set_color(recolor(text.get_color()))
+        for image in ax.images:
+            color = palette.get(to_hex(image.get_cmap()(0.0)))
+            if color:
+                image.set_cmap(
+                    LinearSegmentedColormap.from_list(
+                        "trajectory_shap", [color, "#FFFFFF"]
+                    )
+                )
+
+
 if st.button("Predict"):
     prediction = model.predict(inputs)
 
@@ -214,6 +249,7 @@ if st.button("Predict"):
             figsize=(16, 4),
         )
 
+        style_shap_force_plot(fig)
         st.pyplot(fig)
         plt.close(fig)
 
