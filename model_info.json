@@ -1,0 +1,214 @@
+{
+  "format": "charls-rf-v1",
+  "created_at": "2026-10-22 04:02:54 UTC",
+  "n_trees": 500,
+  "development_n": 1867,
+  "validation_n": 801,
+  "training": {
+    "mtry": 3,
+    "nodesize": "25",
+    "maxnodes": "30",
+    "bestTune": {
+      "mtry": 3
+    }
+  },
+  "parity": {
+    "case_count": 39,
+    "max_probability_error": 0,
+    "boundary_case_count": 91,
+    "boundary_probability_error": 0,
+    "full_development_encoding_rows": 1867
+  },
+  "class_labels": {
+    "Class1": "G1: Persistent Low Group",
+    "Class2": "G2: Increasing Group",
+    "Class3": "G3: U-Shaped Group",
+    "Class4": "G4: Persistent High Group"
+  },
+  "class_label_basis": "Reviewed against the exported 2011-2020 development-group mean trajectories.",
+  "metrics": [
+    {
+      "Dataset": "Training",
+      "Model": "RF",
+      "Accuracy": 0.563470808784146,
+      "Sensitivity": 0.508155825111093,
+      "Precision": 0.460955639752745,
+      "Specificity": 0.829135340145713,
+      "F1": 0.445873619134489,
+      "AUC": 0.764662365143213
+    },
+    {
+      "Dataset": "Training",
+      "Model": "XGB",
+      "Accuracy": 0.519550080342796,
+      "Sensitivity": 0.414038923613468,
+      "Precision": 0.386797861527102,
+      "Specificity": 0.813134981737275,
+      "F1": 0.392894862153749,
+      "AUC": 0.698109963201092
+    },
+    {
+      "Dataset": "Training",
+      "Model": "PSVM",
+      "Accuracy": 0.500267809319764,
+      "Sensitivity": 0.417655874353164,
+      "Precision": 0.387927709477772,
+      "Specificity": 0.812483658231524,
+      "F1": 0.391362702234498,
+      "AUC": 0.681497879791172
+    },
+    {
+      "Dataset": "Training",
+      "Model": "Multinom",
+      "Accuracy": 0.462774504552758,
+      "Sensitivity": 0.416193941910108,
+      "Precision": 0.37379649001128,
+      "Specificity": 0.808966867701665,
+      "F1": 0.373140635540512,
+      "AUC": 0.675487053437497
+    },
+    {
+      "Dataset": "Test",
+      "Model": "RF",
+      "Accuracy": 0.51310861423221,
+      "Sensitivity": 0.35172663568065,
+      "Precision": 0.328253548491811,
+      "Specificity": 0.807331791791854,
+      "F1": 0.3128370416961,
+      "AUC": 0.634246603330373
+    },
+    {
+      "Dataset": "Test",
+      "Model": "XGB",
+      "Accuracy": 0.491885143570537,
+      "Sensitivity": 0.338796444489563,
+      "Precision": 0.319882130099905,
+      "Specificity": 0.801973916797306,
+      "F1": 0.322083532115042,
+      "AUC": 0.621035955608758
+    },
+    {
+      "Dataset": "Test",
+      "Model": "PSVM",
+      "Accuracy": 0.49063670411985,
+      "Sensitivity": 0.354539910237357,
+      "Precision": 0.338026649686124,
+      "Specificity": 0.811189585926313,
+      "F1": 0.335788548071114,
+      "AUC": 0.646092907372987
+    },
+    {
+      "Dataset": "Test",
+      "Model": "Multinom",
+      "Accuracy": 0.446941323345818,
+      "Sensitivity": 0.328408871385545,
+      "Precision": 0.319232569923894,
+      "Specificity": 0.804897521942935,
+      "F1": 0.309870271503003,
+      "AUC": 0.610184231157422
+    }
+  ],
+  "trajectories": [
+    {
+      "class": "Class1",
+      "year": 2011,
+      "mean": 5.47398156407969
+    },
+    {
+      "class": "Class2",
+      "year": 2011,
+      "mean": 8.85513739545998
+    },
+    {
+      "class": "Class3",
+      "year": 2011,
+      "mean": 17.5155790711346
+    },
+    {
+      "class": "Class4",
+      "year": 2011,
+      "mean": 17.9435435435435
+    },
+    {
+      "class": "Class1",
+      "year": 2013,
+      "mean": 5.70264644662504
+    },
+    {
+      "class": "Class2",
+      "year": 2013,
+      "mean": 9.57497013142174
+    },
+    {
+      "class": "Class3",
+      "year": 2013,
+      "mean": 11.0176366843034
+    },
+    {
+      "class": "Class4",
+      "year": 2013,
+      "mean": 16.1207207207207
+    },
+    {
+      "class": "Class1",
+      "year": 2015,
+      "mean": 4.83833878481514
+    },
+    {
+      "class": "Class2",
+      "year": 2015,
+      "mean": 11.6732377538829
+    },
+    {
+      "class": "Class3",
+      "year": 2015,
+      "mean": 9.88771310993533
+    },
+    {
+      "class": "Class4",
+      "year": 2015,
+      "mean": 20.4654654654655
+    },
+    {
+      "class": "Class1",
+      "year": 2018,
+      "mean": 5.04113390821687
+    },
+    {
+      "class": "Class2",
+      "year": 2018,
+      "mean": 14.8542413381123
+    },
+    {
+      "class": "Class3",
+      "year": 2018,
+      "mean": 9.78777189888301
+    },
+    {
+      "class": "Class4",
+      "year": 2018,
+      "mean": 20.3153153153153
+    },
+    {
+      "class": "Class1",
+      "year": 2020,
+      "mean": 6.91882247992864
+    },
+    {
+      "class": "Class2",
+      "year": 2020,
+      "mean": 12.0908004778973
+    },
+    {
+      "class": "Class3",
+      "year": 2020,
+      "mean": 12.0623162845385
+    },
+    {
+      "class": "Class4",
+      "year": 2020,
+      "mean": 17.2216216216216
+    }
+  ],
+  "artifact_sha256": "92ac184550783b012fc0de66b4a2c025661bf9d0779eab64c3d30d797d3380e7"
+}

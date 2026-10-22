@@ -5,6 +5,10 @@ import shap
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, to_hex, to_rgba
 from pathlib import Path
+import hashlib
+
+from presentation import (class_display_names, input_display_name,
+                          category_display_labels, UNITS)
 
 from predictor import TrajectoryModel
 
@@ -15,98 +19,23 @@ st.set_page_config(
 )
 
 
-# Load the original random forest model
+# Include the artifact fingerprint in the cache key after model replacement.
 @st.cache_resource
-def load_model():
-    path = Path(__file__).absolute().parent / "artifacts" / "model.json.gz"
+def load_model(path, fingerprint):
     return TrajectoryModel.load(path)
 
 
-model = load_model()
+artifact_path = Path(__file__).absolute().parent / "artifacts" / "model.json.gz"
+artifact_fingerprint = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+model = load_model(str(artifact_path), artifact_fingerprint)
 
-# English names for the four trajectory groups
-group_names = {
-    "Class1": "G1: Persistent Low Group",
-    "Class2": "G2: Increasing Group",
-    "Class3": "G3: U-Shaped Group",
-    "Class4": "G4: Persistent High Group",
-}
+# Class numbers have no intrinsic trajectory meaning after refitting.
+group_names = class_display_names(model.data, model.classes)
 
 variable_names = [spec["name"] for spec in model.inputs]
 
 
-# English variable labels
-english_labels = {
-    "gender": "Gender",
-    "marry": "Marital status",
-    "edu": "Education level",
-    "retire": "Retirement status",
-    "systo": "Systolic blood pressure",
-    "bmi": "BMI",
-    "drinkl": "Alcohol consumption",
-    "social": "Social participation",
-    "chronic": "Chronic disease",
-    "arther": "Arthritis",
-    "disability": "Disability",
-    "hear": "Hearing",
-    "eyesight_close": "Near vision",
-    "sleep": "Sleep duration",
-    "satlife": "Life satisfaction",
-}
-
-
-# Preserve the original category codes
-category_labels = {
-    "gender": {
-        "1": "Female",
-        "2": "Male",
-    },
-    "marry": {
-        "1": "Other",
-        "2": "Married",
-    },
-    "edu": {
-        "1": "Less than primary school",
-        "2": "Primary school",
-        "3": "Middle school",
-        "4": "High school or above",
-    },
-    "retire": {
-        "1": "Not retired",
-        "2": "Retired",
-    },
-    "hear": {
-        "1": "Good",
-        "2": "Fair",
-        "3": "Poor",
-    },
-    "eyesight_close": {
-        "1": "Good",
-        "2": "Fair",
-        "3": "Poor",
-    },
-    "satlife": {
-        "1": "Poor",
-        "2": "Fair",
-        "3": "Good",
-    },
-}
-
-binary_labels = {
-    "1": "No",
-    "2": "Yes",
-}
-
-units = {
-    "systo": "mmHg",
-    "bmi": "kg/m²",
-    "sleep": "hours/night",
-}
-
-feature_names = [
-    english_labels.get(name, name)
-    for name in variable_names
-]
+feature_names = [input_display_name(spec) for spec in model.inputs]
 
 
 st.title("Depressive Symptom Trajectory Predictor")
@@ -117,21 +46,21 @@ inputs = {}
 
 for spec in model.inputs:
     name = spec["name"]
-    label = english_labels.get(name, name)
+    label = input_display_name(spec)
 
     if spec["type"] == "category":
         options = [item["value"] for item in spec["options"]]
-        labels = category_labels.get(name, binary_labels)
+        labels = category_display_labels(spec)
 
         inputs[name] = st.selectbox(
             label,
             options=options,
             index=options.index(str(spec["default"])),
-            format_func=lambda value, mapping=labels: mapping[value],
+            format_func=lambda value, mapping=labels: mapping[str(value)],
         )
 
     else:
-        unit = units.get(name, "")
+        unit = UNITS.get(name, "")
         display_label = f"{label} ({unit})" if unit else label
 
         inputs[name] = st.number_input(
@@ -258,3 +187,4 @@ if st.button("Predict"):
         "Positive SHAP values increase the predicted-class score; "
         "negative values decrease it."
     )
+
