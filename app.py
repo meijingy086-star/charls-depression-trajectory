@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, to_hex, to_rgba
 from pathlib import Path
 import hashlib
+import logging
 
 from presentation import (class_display_names, input_display_name,
                           category_display_labels, UNITS)
@@ -26,6 +27,10 @@ def load_model(path, fingerprint):
 
 
 artifact_path = Path(__file__).absolute().parent / "artifacts" / "model.json.gz"
+if not artifact_path.is_file():
+    logging.getLogger(__name__).error("Required prediction artifact is missing: %s", artifact_path)
+    st.error("The prediction model is temporarily unavailable. Please contact the app owner.")
+    st.stop()
 artifact_fingerprint = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
 model = load_model(str(artifact_path), artifact_fingerprint)
 
@@ -187,4 +192,5 @@ if st.button("Predict"):
         "Positive SHAP values increase the predicted-class score; "
         "negative values decrease it."
     )
+
 
